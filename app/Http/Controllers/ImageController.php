@@ -14,6 +14,17 @@ class ImageController extends Controller
       'png', 'jpg', 'gif'
     ];
 
+    public function index($name)
+    {
+      if (!Storage::disk('s3')->exists($this->buildFilePath($name))) {
+        abort(404);
+      }
+
+      return view('image.index')->with([
+        'image' => $this->buildAbsoluteFilePath($name)
+      ]);
+    }
+
     public function create(Request $request)
     {
       // dd($request->file('image'));
@@ -37,8 +48,9 @@ class ImageController extends Controller
         file_get_contents($file->getRealPath())
       );
 
-      return redirect()->back();
+      return redirect()->route('image.index', $name);
     }
+
 
     protected function isAllowedFile(UploadedFile $file)
     {
@@ -48,8 +60,14 @@ class ImageController extends Controller
         );
     }
 
-    protected function buildFilePath($name)
-   {
-       return 'images/' . $name;
-   }
+     protected function buildFilePath($name)
+     {
+         return 'images/' . $name;
+     }
+
+     protected function buildAbsoluteFilePath($name)
+     {
+       return 'https://s3.amazonaws.com/images.ap/' . $this->buildFilePath($name);
+     }
+
 }
