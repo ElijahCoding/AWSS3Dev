@@ -2,86 +2,54 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
+use Storage;
 use App\Http\Requests;
+use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class ImageController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
-    {
-        //
-    }
+    protected $allowedFileExtensions= [
+      'png', 'jpg', 'gif'
+    ];
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create(Request $request)
     {
-      dd($request->file('image'));
+      // dd($request->file('image'));
+      $file = $request->file('image');
+
+      if (!$file) {
+        return redirect()->back();
+      }
+
+      if (!$this->isAllowedFile($file)) {
+        return redirect()->back();
+      }
+
+      $name = str_random(255) . '.' . $file->getClientOriginalExtension();
+      // dd($name);
+
+      // dd($this->buildFilePath($name));
+
+      Storage::disk('s3')->put(
+        $this->buildFilePath($name),
+        file_get_contents($file->getRealPath())
+      );
+
+      return redirect()->back();
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
+    protected function isAllowedFile(UploadedFile $file)
     {
-        //
+        return in_array(
+            $file->getClientOriginalExtension(),
+            $this->allowedFileExtensions
+        );
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
-    }
+    protected function buildFilePath($name)
+   {
+       return 'images/' . $name;
+   }
 }
